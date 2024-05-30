@@ -2,6 +2,10 @@
 let img; //Variable to store the main image
 let palette; //Variable to store the color paltte
 let y = 0; //Variable to make the vertical position of the image
+//Add a variable to hold fish image
+let fishImg; //Variable to store the fish image
+let fishPositions = [];// Array to store fish positions
+let numFish = 6; // Number of fish
 
 // This is global variable to store our image
 let logoImage;
@@ -17,6 +21,8 @@ const originalWidth = 1200; // set the original width
 const originalHeight = 800; // set the original height
 let aspectRatio = originalWidth / originalHeight; //Aspect ratio of the canvas
 
+// Define the water area
+let waterYStart; // Dynamic water start position
 
 
 
@@ -52,6 +58,7 @@ class Brush {
 function preload() {
   img = loadImage('/assets/quay.jpg'); //Load the main image
   logoImage = loadImage('assets/Image annotation.png'); //Load the logo image
+  fishImg = loadImage('assets/fish.png'); // Load the fish image
 } 
 
 function setup() {
@@ -74,6 +81,15 @@ function setup() {
     '#dc7542', '#bd5a42',
     '#d5b171', '#936c4a', 
   ];
+
+  // Calculate the water start position
+  waterYStart = height / 2;
+
+  // Initialize fish positions
+  for (let i = 0; i < numFish; i++) {
+    let fish = createFishInWater();
+    fishPositions.push(fish);
+  }
 
   //Let's add a variable of speed and this technique is from https://www.geeksforgeeks.org/p5-js-framerate-function/
   frameRate(25);
@@ -104,10 +120,13 @@ function draw() {
     }
 
     y++; // Increment y
-    if (y >= height) { // If y is greater than or equal to canvas height
-      noLoop(); // Stop the draw loop once the palette effect is complete
+    if (y >= height) {
+      noLoop();
     }
   }
+
+  // Draw fish images with Perlin noise for smooth movement
+  drawFish();
 
   // Draw the logo image in the center of the canvas
   let logoAspect = logoWidth / logoHeight; // Calculate logo aspect ratio
@@ -122,6 +141,28 @@ function draw() {
   }
   // Draw the image in the centre of the canvas, offsetting the image by half its width and height
   image(logoImage, (width / 2) - (logoWidth / 2), (height / 2) - (logoHeight / 2), logoWidth, logoHeight);
+}
+
+function drawFish() {
+  for (let i = 0; i < fishPositions.length; i++) {
+    let fish = fishPositions[i];
+
+    fish.x += (noise(fish.noiseOffsetX) - 0.5) * 2;
+    fish.y += (noise(fish.noiseOffsetY) - 0.5) * 2;
+
+    // Ensure fish stays within water area
+    if (fish.y < waterYStart) {
+      fish.y = waterYStart + random(0, height - waterYStart);
+    }
+
+    fish.x = constrain(fish.x, 0, width);
+    fish.y = constrain(fish.y, waterYStart, height);
+
+    fish.noiseOffsetX += 0.01;
+    fish.noiseOffsetY += 0.01;
+
+    image(fishImg, fish.x, fish.y, 50, 30);
+  }
 }
 
 // Our function to get the closest color from the palette and this technique comes from https://happycoding.io/tutorials/p5js/images/image-palette
@@ -160,13 +201,30 @@ function getPaletteColor(imgColor) {
   return targetColor;// Return the closest color
 }
 
+function createFishInWater() {
+  return {
+    x: random(width),
+    y: random(height / 2, height), // Ensure fish starts in the water area
+    noiseOffsetX: random(1000),
+    noiseOffsetY: random(1000)
+  };
+}
+
 function windowResized() {
   //when drag the window to different size, it will automatically calculate the changes and let the image resize and the window change.
   let canvasSize = calculateCanvasSize();
   resizeCanvas(canvasSize.canvasWidth, canvasSize.canvasHeight);
   calculateImageDrawProps(canvasSize.canvasWidth, canvasSize.canvasHeight);
   y = 0; //Restart palette effect
-  loop(); // restart the draw loop
+  canvasImage = null; // Reset the canvas image
+   // Recalculate water start position
+  waterYStart = height / 2;
+  // Reset fish positions
+  fishPositions = [];
+  for (let i = 0; i < numFish; i++) {
+    let fish = createFishInWater();
+    fishPositions.push(fish);
+  }
 }
 
 function calculateCanvasSize() {
