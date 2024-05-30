@@ -7,6 +7,8 @@ let fishImg; //Variable to store the fish image
 let fishPositions = [];// Array to store fish positions
 let numFish = 6; // Number of fish
 
+let canvasImage; // Variable to store the canvas as an image
+
 // This is global variable to store our image
 let logoImage;
 // Two variables to hold the width and height of the image
@@ -65,6 +67,10 @@ function setup() {
   // We will make the canvas the same size as the image using its properties
   let canvasSize = calculateCanvasSize();
   createCanvas(canvasSize.canvasWidth, canvasSize.canvasHeight);
+
+  // Create a graphics buffer to store the background
+  canvasImage = createGraphics(canvasSize.canvasWidth, canvasSize.canvasHeight);
+
   // Let's calculate the aspect ratio of the image - this will never change so we only need to do it once
   img.resize(canvasSize.canvasWidth, canvasSize.canvasHeight);
   imgDrwPrps.aspect = img.width / img.height;
@@ -120,13 +126,16 @@ function draw() {
     }
 
     y++; // Increment y
-    if (y >= height) {
-      noLoop();
-    }
+  } else if (y >= height && !canvasImage) {
+    // Save the canvas as an image once the palette drawing is completed
+    canvasImage = createGraphics(width, height);
+    canvasImage.image(canvas, 0, 0, width, height);
   }
 
-  // Draw fish images with Perlin noise for smooth movement
-  drawFish();
+  // Draw the saved canvas image as background
+  if (canvasImage) {
+    image(canvasImage, 0, 0);
+  }
 
   // Draw the logo image in the center of the canvas
   let logoAspect = logoWidth / logoHeight; // Calculate logo aspect ratio
@@ -141,14 +150,29 @@ function draw() {
   }
   // Draw the image in the centre of the canvas, offsetting the image by half its width and height
   image(logoImage, (width / 2) - (logoWidth / 2), (height / 2) - (logoHeight / 2), logoWidth, logoHeight);
+
+  // Draw fish images with Perlin noise for smooth movement
+  if (y >= height) {
+    drawFish();
+  }
 }
 
 function drawFish() {
+  // Clear only the area where fish are drawn
+  clear();
+
+  // Draw the saved canvas image as background
+  if (canvasImage) {
+    image(canvasImage, 0, 0);
+  }
+  // Draw the logo image again
+  image(logoImage, (width / 2) - (logoWidth / 2), (height / 2) - (logoHeight / 2), logoWidth, logoHeight);
+  
   for (let i = 0; i < fishPositions.length; i++) {
     let fish = fishPositions[i];
 
-    fish.x += (noise(fish.noiseOffsetX) - 0.5) * 2;
-    fish.y += (noise(fish.noiseOffsetY) - 0.5) * 2;
+    fish.x += (noise(fish.noiseOffsetX + frameCount * 0.01) - 0.5) * 1;
+    fish.y += (noise(fish.noiseOffsetY + frameCount * 0.01) - 0.5) * 1;
 
     // Ensure fish stays within water area
     if (fish.y < waterYStart) {
@@ -160,7 +184,7 @@ function drawFish() {
 
     fish.noiseOffsetX += 0.01;
     fish.noiseOffsetY += 0.01;
-
+    // Draw fish
     image(fishImg, fish.x, fish.y, 50, 30);
   }
 }
@@ -219,12 +243,14 @@ function windowResized() {
   canvasImage = null; // Reset the canvas image
    // Recalculate water start position
   waterYStart = height / 2;
+
   // Reset fish positions
   fishPositions = [];
   for (let i = 0; i < numFish; i++) {
     let fish = createFishInWater();
     fishPositions.push(fish);
   }
+  loop(); // Restart the draw loop
 }
 
 function calculateCanvasSize() {
