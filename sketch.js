@@ -5,7 +5,7 @@ let y = 0; //Variable to make the vertical position of the image
 //Add a variable to hold fish image
 let fishImg; //Variable to store the fish image
 let fishPositions = [];// Array to store fish positions
-let numFish = 6; // Number of fish
+let numFish = 8; // Number of fish
 
 let canvasImage; // Variable to store the canvas as an image
 
@@ -55,6 +55,41 @@ class Brush {
 
 
 
+// Wave class to draw a single wave line across the screen
+class Wave {
+  constructor(amplitude, frequency, yBase, color, strokeWeight) {
+    this.amplitude = amplitude; // Height of the wave
+    this.frequency = frequency; // How often peaks and troughs occur
+    this.yBase = yBase; // Base line of the wave
+    this.offset = 0 // Initial offset for Perlin noise
+    this.color = color; // Color of the wave
+    this.strokeWeight = strokeWeight; // Thickness of the wave line
+  }
+
+  display() {
+    noFill();
+    stroke(this.color);
+    strokeWeight(this.strokeWeight);
+    beginShape();
+    let xoff = this.offset; 
+    for (let x = 0; x <= width; x += 10) {
+      let waveHeight = map(noise(xoff), 0, 1, -this.amplitude, this.amplitude);
+      vertex(x, this.yBase + waveHeight);
+      xoff += this.frequency;
+    }
+    endShape();
+    this.offset += 0.005; // Smaller increment for smoother animation
+  }
+}
+
+// Array to store multiple waves
+let waves = [];
+// Number of waves to create
+let numWaves = 6;
+
+
+
+
 //FUNCTIONS
 //let's load the image from disk
 function preload() {
@@ -97,6 +132,15 @@ function setup() {
     fishPositions.push(fish);
   }
 
+  // Initialize wave positions for palette effect
+  for (let i = 0; i < numWaves; i++) {
+    let yBase = waterYStart + (i * height / (2 * numWaves)) + (height / 6); // Move waves down further
+    let amplitude = 10 + i * 5; // Reduce amplitude for less overlapping effect
+    let waveColor = color(255, 255, 255, 30); // More transparent color for waves
+    let strokeW = 1 + i * 0.5; // Reduce stroke weight
+    waves.push(new Wave(amplitude, random(0.05, 0.05), yBase, waveColor, strokeW));
+  }
+
   //Let's add a variable of speed and this technique is from https://www.geeksforgeeks.org/p5-js-framerate-function/
   frameRate(25);
 }
@@ -125,13 +169,20 @@ function draw() {
       brush.draw(x, y); // Draw using the brush
     }
 
+     // Draw waves only in the sea area with transparent color
+     if (y >= waterYStart + height / 4) { // Adjust wave start position
+      for (let i = 0; i < waves.length; i++) {
+        waves[i].display();
+      }
+    }
+
     y++; // Increment y
   } else if (y >= height && !canvasImage) {
     // Save the canvas as an image once the palette drawing is completed
     canvasImage = createGraphics(width, height);
     canvasImage.image(canvas, 0, 0, width, height);
   }
-
+  
   // Draw the saved canvas image as background
   if (canvasImage) {
     image(canvasImage, 0, 0);
@@ -155,11 +206,18 @@ function draw() {
   if (y >= height) {
     drawFish();
   }
+
+  for (let i = 0; i < waves.length; i++) {
+    waves[i].display();
+  }
 }
 
 function drawFish() {
   // Clear only the area where fish are drawn
   clear();
+
+  // Draw the background as a light blue color
+  background(173, 216, 230);
 
   // Draw the saved canvas image as background
   if (canvasImage) {
@@ -168,6 +226,12 @@ function drawFish() {
   // Draw the logo image again
   image(logoImage, (width / 2) - (logoWidth / 2), (height / 2) - (logoHeight / 2), logoWidth, logoHeight);
   
+  // Draw waves over the entire canvas with background color
+  let waveColor = color(173, 216, 230, 50); // Light blue with transparency
+  for (let i = 0; i < numWaves; i++) {
+    waves[i].display();
+  }
+
   for (let i = 0; i < fishPositions.length; i++) {
     let fish = fishPositions[i];
 
@@ -289,4 +353,14 @@ function calculateImageDrawProps(canvasWidth, canvasHeight) {
     imgDrwPrps.xOffset = 0;
     imgDrwPrps.yOffset = 0;
   }
+}
+
+// Create wave objects
+for (let i = 0; i < numWaves; i++) {
+  let amplitude = random(5, 20);
+  let frequency = random(0.01, 0.05);
+  let yBase = random(height / 2, height);
+  let color = color(173, 216, 230, 100); // Semi-transparent wave color
+  let strokeWeight = random(1, 3);
+  waves.push(new Wave(amplitude, frequency, yBase, color, strokeWeight));
 }
