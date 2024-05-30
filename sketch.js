@@ -5,8 +5,6 @@ let y = 0; //Variable to make the vertical position of the image
 //Add a variable to hold fish image
 let fishImg; //Variable to store the fish image
 let fishPositions = [];// Array to store fish positions
-let numFish = 8; // Number of fish
-
 let canvasImage; // Variable to store the canvas as an image
 
 // This is global variable to store our image
@@ -84,8 +82,36 @@ class Wave {
 
 // Array to store multiple waves
 let waves = [];
-// Number of waves to create
+// Number of waves
 let numWaves = 6;
+
+
+
+
+// Fish class to generate fish using Perlin noise and randomness
+class Fish {
+  constructor() {
+    this.x = random(width);
+    this.y = random(height / 2, height);
+    this.noiseOffsetX = random(1000);
+    this.noiseOffsetY = random(1000);
+  }
+
+  display() {
+    this.x += (noise(this.noiseOffsetX + frameCount * 0.01) - 0.5) * 2;
+    this.y += (noise(this.noiseOffsetY + frameCount * 0.01) - 0.5) * 2;
+
+    this.x = constrain(this.x, 0, width);
+    this.y = constrain(this.y, waterYStart, height);
+
+    image(fishImg, this.x, this.y, 50, 30);
+  }
+}
+
+// Array to store multiple fish
+let fish = [];
+// Number of fish
+let numFish = 8;
 
 
 
@@ -182,7 +208,7 @@ function draw() {
     canvasImage = createGraphics(width, height);
     canvasImage.image(canvas, 0, 0, width, height);
   }
-  
+
   // Draw the saved canvas image as background
   if (canvasImage) {
     image(canvasImage, 0, 0);
