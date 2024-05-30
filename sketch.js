@@ -5,8 +5,7 @@ let y = 0; //Variable to make the vertical position of the image
 //Add a variable to hold fish image
 let fishImg; //Variable to store the fish image
 let fishPositions = [];// Array to store fish positions
-let numFish = 8; // Number of fish
-
+let birdImg; // Variable to store the bird image
 let canvasImage; // Variable to store the canvas as an image
 
 // This is global variable to store our image
@@ -25,7 +24,8 @@ let aspectRatio = originalWidth / originalHeight; //Aspect ratio of the canvas
 
 // Define the water area
 let waterYStart; // Dynamic water start position
-
+ 
+ 
 
 
 //CLASS
@@ -84,8 +84,65 @@ class Wave {
 
 // Array to store multiple waves
 let waves = [];
-// Number of waves to create
+// Number of waves
 let numWaves = 6;
+
+
+
+
+// Fish class to generate fish using Perlin noise and randomness
+class Fish {
+  constructor() {
+    this.x = random(width);
+    this.y = random(height / 2, height);
+    this.noiseOffsetX = random(1000);
+    this.noiseOffsetY = random(1000);
+  }
+
+  display() {
+    this.x += (noise(this.noiseOffsetX + frameCount * 0.01) - 0.5) * 2;
+    this.y += (noise(this.noiseOffsetY + frameCount * 0.01) - 0.5) * 2;
+
+    this.x = constrain(this.x, 0, width);
+    this.y = constrain(this.y, waterYStart, height);
+
+    image(fishImg, this.x, this.y, 50, 30);
+  }
+}
+
+// Array to store multiple fish
+let fish = [];
+// Number of fish
+let numFish = 8;
+
+
+
+
+// Bird class to generate birds using Perlin noise and randomness
+class Bird {
+  constructor() {
+    this.x = random(width);
+    this.y = random(height / 4); // Birds in the upper quarter of the canvas
+    this.noiseOffsetX = random(1000);
+    this.noiseOffsetY = random(1000);
+  }
+
+  display() {
+    this.x += (noise(this.noiseOffsetX + frameCount * 0.01) - 0.5) * 2;
+    this.y += (noise(this.noiseOffsetY + frameCount * 0.01) - 0.5) * 2;
+
+    this.x = constrain(this.x, 0, width);
+    this.y = constrain(this.y, 0, height / 4);
+
+    image(birdImg, this.x, this.y, 50, 30);
+  }
+}
+
+// Array to store multiple birds
+let birds = [];
+// Number of birds
+let numBirds = 3;
+
 
 
 
@@ -96,6 +153,7 @@ function preload() {
   img = loadImage('/assets/quay.jpg'); //Load the main image
   logoImage = loadImage('assets/Image annotation.png'); //Load the logo image
   fishImg = loadImage('assets/fish.png'); // Load the fish image
+  birdImg = loadImage('assets/bird.png');// Load the bird image
 } 
 
 function setup() {
@@ -141,6 +199,11 @@ function setup() {
     waves.push(new Wave(amplitude, random(0.05, 0.05), yBase, waveColor, strokeW));
   }
 
+  // Initialize birds
+  for (let i = 0; i < numBirds; i++) {
+    birds.push(new Bird());
+  }
+
   //Let's add a variable of speed and this technique is from https://www.geeksforgeeks.org/p5-js-framerate-function/
   frameRate(25);
 }
@@ -176,13 +239,22 @@ function draw() {
       }
     }
 
+    // Draw birds only in the upper area
+    if (y < height / 2) { // Draw birds in the upper half of the canvas
+      for (let i = 0; i < birds.length; i++) {
+        birds[i].display();
+      }
+    }
+
     y++; // Increment y
   } else if (y >= height && !canvasImage) {
     // Save the canvas as an image once the palette drawing is completed
     canvasImage = createGraphics(width, height);
     canvasImage.image(canvas, 0, 0, width, height);
-  }
-  
+  } else {// Clear birds after the image palette is complete
+  birds = [];
+}
+
   // Draw the saved canvas image as background
   if (canvasImage) {
     image(canvasImage, 0, 0);
